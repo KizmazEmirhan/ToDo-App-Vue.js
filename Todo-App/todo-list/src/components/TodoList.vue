@@ -1,32 +1,53 @@
 <template>
-  <div class="todo-start">
-    <div class="header-image">
-      <img src="../assets/todo-list-headerImg.jpeg" />
-    </div>
-    <div class="add-task">
-      <input
-        type="text"
-        class="add-task-input"
-        placeholder="Add your task here!"
-        v-model="newTask"
-        @keyup.enter="addTask(newTask)"
-      />
-    </div>
-    <div class="tasks-section">
-      <div class="tasks" v-for="(task, index) in tasks" :key="index">
-        <span :class="{ 'task-title': true, hidden: task.editing }">{{
-          task.title
-        }}</span>
-        <input
-          v-if="task.editing"
-          class="task-item-editing"
-          v-model="task.title"
-          @keyup.enter="doneUpdateTask(task)"
-        />
-        <button class="edit-btn" @click="updateTask(task)">Update Task</button>
-        <button class="remove-btn" @click="removeTask(index)">
-          Remove Task
-        </button>
+  <div class="todo-app">
+    <div class="todo-container">
+      <div class="add-task-box">
+        <h2>Add New Task</h2>
+        <div class="add-task">
+          <input
+            type="text"
+            class="add-task-input"
+            placeholder="Add your task here!"
+            v-model="newTask"
+            @keyup.enter="addTask(newTask)"
+          />
+          <button class="add-btn" @click="addTask(newTask)">
+            <span class="material-icons">add</span>
+          </button>
+        </div>
+        <div class="current-date">
+          {{ formattedDate }}
+        </div>
+      </div>
+      <div class="tasks-box">
+        <h2>Tasks</h2>
+        <div class="tasks-section">
+          <div
+            class="task"
+            v-for="(task, index) in tasks"
+            :key="index"
+            :style="{ backgroundColor: task.color }"
+          >
+            <span :class="{ 'task-title': true, hidden: task.editing }">
+              {{ task.title }}
+            </span>
+            <input
+              v-if="task.editing"
+              class="task-item-editing"
+              v-model="task.title"
+              @keyup.enter="doneUpdateTask(task)"
+              ref="editInput"
+            />
+            <div class="task-icons">
+              <button class="icon-btn edit-btn" @click="updateTask(task)">
+                <span class="material-icons">edit</span>
+              </button>
+              <button class="icon-btn remove-btn" @click="removeTask(index)">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -46,6 +67,7 @@ export default {
           title: "todo 1",
           hasCompleted: false,
           editing: false,
+          color: "#FFB3BA",
         },
         {
           id: 2,
@@ -53,10 +75,12 @@ export default {
           title: "todo 2",
           hasCompleted: false,
           editing: false,
+          color: "#FFDFBA",
         },
       ],
       tasks: [],
       newTask: "",
+      currentDate: new Date(),
     };
   },
   mounted() {
@@ -74,19 +98,37 @@ export default {
     tasksFromLocalStorage() {
       return JSON.parse(localStorage.getItem("tasks") || "[]");
     },
+    formattedDate() {
+      const options = { year: "numeric", month: "long", day: "numeric" };
+      return this.currentDate.toLocaleDateString(undefined, options);
+    },
   },
   methods: {
     addTask(newTask) {
-      console.log(newTask);
       if (newTask.trim().length == 0) {
         return;
       }
+      const pastelColors = [
+        "#FFB3BA",
+        "#FFDFBA",
+        "#FFFFBA",
+        "#BAFFC9",
+        "#BAE1FF",
+        "#D4A5A5",
+        "#EAD1DC",
+        "#C4A5FF",
+        "#A5D4FF",
+        "#BAFFD4",
+      ];
+      const randomColor =
+        pastelColors[Math.floor(Math.random() * pastelColors.length)];
       this.tasks.push({
         id: Date.now(),
         completed: false,
         title: newTask,
         hasCompleted: false,
         editing: false,
+        color: randomColor,
       });
       localStorage.setItem("tasks", JSON.stringify(this.tasks));
       this.newTask = "";
@@ -98,9 +140,16 @@ export default {
     updateTask(task) {
       this.beforeEditCache = task.title;
       task.editing = true;
+      this.$nextTick(() => {
+        this.$refs.editInput.forEach((input, index) => {
+          if (this.tasks[index].editing) {
+            input.focus();
+          }
+        });
+      });
     },
     doneUpdateTask(task) {
-      if (this.beforeEditCache.trim().length == 0) {
+      if (task.title.trim() === "") {
         task.title = this.beforeEditCache;
       }
       const updatedTasks = this.tasks.map((t) =>
@@ -110,7 +159,6 @@ export default {
       task.editing = false;
     },
   },
-
   created() {
     this.tasks = this.tasksFromLocalStorage;
   },
@@ -119,7 +167,6 @@ export default {
   },
 };
 </script>
-
-<style scoped>
+<style>
 @import "../styles/todo-styles.css";
 </style>
